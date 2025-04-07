@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\MADAI-BACKEND.props" />
+</Project>
