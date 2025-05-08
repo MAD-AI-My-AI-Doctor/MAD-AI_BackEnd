@@ -1,0 +1,6 @@
+@MADAI_BACKEND_HostAddress = http://localhost:5122
+
+GET {{MADAI_BACKEND_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
