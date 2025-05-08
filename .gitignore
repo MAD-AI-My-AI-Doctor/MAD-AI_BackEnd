@@ -1,3 +1,28 @@
-".vs/" 
-"bin/" 
-"obj/" 
+# Ignore Visual Studio files
+.vs/
+*.user
+*.suo
+*.cache
+*.ilk
+*.pdb
+
+# Build output
+bin/
+obj/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+
+# Database files
+*.db
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Entity Framework Migrations
+Migrations/
