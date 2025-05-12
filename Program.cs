@@ -19,6 +19,8 @@ builder.Services.AddScoped<IMedicalReportService, MedicalReportService>();
 
 
 //builder.Services.AddHttpClient<ISymptomService, SymptomService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 builder.Services.AddControllers();
 

@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Models.SymptomEntry> SymptomEntries { get; set; }
     public DbSet<Models.AnalysisResult> AnalysisResults { get; set; }
         public DbSet<MedicalReport> MedicalReports { get; set; }
+        public DbSet<User> Users { get; set; }
 
 
     }
