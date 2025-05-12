@@ -15,6 +15,19 @@ namespace MADAI_BACKEND.Controllers
             _authService = authService;
         }
 
+
+        [HttpPost("signin")]
+        public async Task<IActionResult> SignIn([FromBody] SignInRequestDTO signInRequest)
+        {
+            var response = await _authService.SignIn(signInRequest);
+            if (response.Token == string.Empty)
+            {
+                return BadRequest(new { message = response.Message });
+            }
+
+            return Ok(response);
+        }
+
         [HttpPost("signup")]
         public async Task<IActionResult> Signup([FromBody] SignupRequestDTO signupRequest)
         {
