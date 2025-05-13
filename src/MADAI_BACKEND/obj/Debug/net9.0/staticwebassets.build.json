@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "X3rvzNYUKfDJZMOjkxgCD+ceFawLGSQdn+8M1NsCrYI=",
+  "Source": "MADAI_BACKEND",
+  "BasePath": "_content/MADAI_BACKEND",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
