@@ -33,6 +33,8 @@ builder.Services.AddScoped<ISymptomService, SymptomService>();
 
 // Register HttpClient + DoctorService
 builder.Services.AddHttpClient<IDoctorService, DoctorService>();
+builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
+
 // After registering DoctorService:
 builder.Services.AddHttpClient<IRecommendationService, RecommendationService>();
 

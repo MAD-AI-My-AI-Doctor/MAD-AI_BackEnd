@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
+using MADAI_BACKEND.Models;
 namespace MADAI_BACKEND.Data
 {
 
@@ -16,9 +17,9 @@ public class AppDbContext : DbContext
        optionsBuilder.UseSqlite("Data Source = MADAI.db");
    }  */
 
-    public DbSet<Models.SymptomEntry> SymptomEntries { get; set; }
-    public DbSet<Models.AnalysisResult> AnalysisResults { get; set; }
+    public DbSet<SymptomEntry> SymptomEntries { get; set; }
+    public DbSet<AnalysisResult> AnalysisResults { get; set; }
+    public DbSet<MedicalHistoryEntry> MedicalHistoryEntries { get; set; }
 
-
-}
+    }
 }
