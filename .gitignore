@@ -1,0 +1,14 @@
+
+# Visual Studio
+.vs/
+
+# Build folders
+**/bin/
+**/obj/
+
+# EF metadata + local database
+*.db
+src/MADAI_BACKEND/Migrations/*Snapshot*.cs
+
+# User-uploaded files (you might want to store these elsewhere in Prod)
+src/MADAI_BACKEND/Uploads/
