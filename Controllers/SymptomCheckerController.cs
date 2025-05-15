@@ -4,10 +4,13 @@ using MADAI_BACKEND.Models;
 using MADAI_BACKEND.Models.DTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace MADAI_BACKEND.Controllers
 {
+    [Authorize] // 🔐 JWT token required for all endpoints in this controller
     [Route("api/[controller]")]
     [ApiController]
     public class SymptomCheckerController : ControllerBase
@@ -27,12 +30,15 @@ namespace MADAI_BACKEND.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!); // ✅ Get current user
+
             // Save user input as a new SymptomEntry.
             var entry = new SymptomEntry
             {
                 PatientName = entryDto.PatientName,
                 SymptomsText = entryDto.SymptomsText,
-                DateSubmitted = entryDto.DateSubmitted
+                DateSubmitted = entryDto.DateSubmitted,
+                UserId = userId // ✅ Assign to logged-in user
             };
 
             _context.SymptomEntries.Add(entry);
@@ -65,5 +71,18 @@ namespace MADAI_BACKEND.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("my-symptoms")]
+        public async Task<IActionResult> GetMySymptoms()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var entries = await _context.SymptomEntries
+                .Where(e => e.UserId == userId)
+                .ToListAsync();
+
+            return Ok(entries);
+        }
+
     }
 }

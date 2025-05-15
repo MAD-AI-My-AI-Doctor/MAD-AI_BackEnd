@@ -1,6 +1,8 @@
 ﻿using MADAI_BACKEND.Contracts;
 using MADAI_BACKEND.Models.DTO;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace MADAI_BACKEND.Controllers
 {
@@ -14,7 +16,6 @@ namespace MADAI_BACKEND.Controllers
         {
             _authService = authService;
         }
-
 
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] SignInRequestDTO signInRequest)
@@ -31,10 +32,12 @@ namespace MADAI_BACKEND.Controllers
         [HttpPost("signup")]
         public async Task<IActionResult> Signup([FromBody] SignupRequestDTO signupRequest)
         {
-            // For simplicity, assuming the creator role is Admin if the user is logged in as Admin
-            string creatorRole = User.Identity?.IsAuthenticated == true ? "Admin" : "Patient";
+            // Get the email of the authenticated user, if any
+            string creatorEmail = User.Identity?.IsAuthenticated == true
+                ? User.FindFirstValue(ClaimTypes.Email) ?? ""
+                : "";
 
-            var result = await _authService.Signup(signupRequest, creatorRole);
+            var result = await _authService.Signup(signupRequest, creatorEmail);
 
             if (result == "Signup successful")
             {

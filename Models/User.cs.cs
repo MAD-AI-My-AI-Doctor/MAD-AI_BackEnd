@@ -33,5 +33,9 @@ namespace MADAI_BACKEND.Models
         public UserRole Role { get; set; } = UserRole.Patient;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public ICollection<SymptomEntry> SymptomEntries { get; set; } = new List<SymptomEntry>();
+        public ICollection<MedicalReport> MedicalReports { get; set; } = new List<MedicalReport>();
+
     }
 }

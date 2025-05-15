@@ -21,5 +21,12 @@ namespace MADAI_BACKEND.Models
         public string? NextSteps { get; set; }
 
         public DateTime DateUploaded { get; set; } = DateTime.Now;
+
+        public int UserId { get; set; }
+        public User? User { get; set; }
+
+        public byte[]? FileData { get; set; }  // 🆕 Add this
+
+
     }
 }
