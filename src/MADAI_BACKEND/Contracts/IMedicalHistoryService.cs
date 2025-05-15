@@ -13,5 +13,7 @@ namespace MADAI_BACKEND.Contracts
 
         // Return the strongly typed list
         Task<IEnumerable<MedicalHistoryEntryDTO>> GetEntriesAsync(Guid patientId);
+
+        Task<List<MedicalHistoryEntryDTO>> GetByPatientIdAsync(Guid patientId);
     }
 }

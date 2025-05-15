@@ -73,5 +73,28 @@ namespace MADAI_BACKEND.Services
                 UploadedAt = e.UploadedAt
             });
         }
+
+
+        public async Task<List<MedicalHistoryEntryDTO>> GetByPatientIdAsync(
+           Guid patientId)
+        {
+            var entries = await _context.MedicalHistoryEntries
+                .Where(e => e.PatientId == patientId)
+                .OrderByDescending(e => e.UploadedAt)
+                .ToListAsync();
+
+            return entries.Select(e => new MedicalHistoryEntryDTO
+            {
+                Id = e.Id,
+                PatientId = e.PatientId,
+                Title = e.Title,
+                Description = e.Description,
+                FileUrl = $"/api/medicalhistory/{e.Id}/file",
+                UploadedAt = e.UploadedAt
+            })
+            .ToList();
+        }
+
+
     }
 }

@@ -37,7 +37,8 @@ builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
 
 // After registering DoctorService:
 builder.Services.AddHttpClient<IRecommendationService, RecommendationService>();
-
+builder.Services.AddScoped<IHealthRecommendationService, HealthRecommendationService>();
+builder.Services.AddScoped<IHealthInsightsService, HealthInsightService>();
 
 // Make sure your appsettings.json has:
 // "GoogleMaps": { "ApiKey": "YOUR_GOOGLE_MAPS_API_KEY" }
