@@ -17,5 +17,10 @@ namespace MADAI_BACKEND.Models
         public DateTime DateSubmitted { get; set; } = DateTime.Now;
 
         public AnalysisResult? AnalysisResult { get; set; }
+
+        public int UserId { get; set; } // foreign key
+        public User? User { get; set; }
+        // navigation property
+
     }
 }

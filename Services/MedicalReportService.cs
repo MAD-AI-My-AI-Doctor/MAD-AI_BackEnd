@@ -39,7 +39,7 @@ namespace MADAI_BACKEND.Services
             var systemMessage = new
             {
                 role = "system",
-                content = "You are a medical assistant AI. Analyze the medical report text and provide possible conditions and recommendations."
+                content = "You are a medical diagnostic assistant.\r\n\r\nCarefully read the attached medical report. Extract all key test values (e.g., blood levels, vitals, imaging results). For each result:\r\n\r\n- Compare it with the normal reference range (if provided or implied).\r\n- Clearly highlight **any values that are too high or too low**.\r\n- Explain the clinical significance briefly and in plain language.\r\n- Provide possible conditions or diagnoses related to these abnormalities.\r\n- Format your findings as clear bullet points for readability.\r\n\r\nBe accurate, concise, and helpful. Assume the report belongs to a general patient unless specific demographics are mentioned. and response in the bullet form."
             };
             var userMessage = new
             {
