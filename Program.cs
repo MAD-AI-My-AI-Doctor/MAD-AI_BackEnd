@@ -51,6 +51,8 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
+builder.Services.AddScoped<IAIRecommendationService, AIRecommendationService>();
+
 
 
 
