@@ -12,6 +12,7 @@ namespace MADAI_BACKEND.Services
     {
         private readonly AppDbContext _context;
         private readonly JwtService _jwtService;
+        private readonly Dictionary<string, string> _resetTokens = new();
 
         public AuthService(AppDbContext context, JwtService jwtService)
         {
@@ -80,5 +81,46 @@ namespace MADAI_BACKEND.Services
 
             return "Signup successful";
         }
+
+        public async Task<string> ForgotPasswordAsync(string email)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return null;
+
+            string token = Guid.NewGuid().ToString();
+            var expiry = DateTime.UtcNow.AddHours(1);
+
+            var resetToken = new PasswordResetToken
+            {
+                Email = email,
+                Token = token,
+                Expiry = expiry
+            };
+
+            _context.PasswordResetTokens.Add(resetToken);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"Send this reset token to user via email: {token}");
+            return token;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string email, string token, string newPassword)
+        {
+            var resetRecord = await _context.PasswordResetTokens
+                .FirstOrDefaultAsync(r => r.Email == email && r.Token == token);
+
+            if (resetRecord == null || resetRecord.Expiry < DateTime.UtcNow)
+                return false;
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return false;
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            _context.PasswordResetTokens.Remove(resetRecord);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+
     }
 }

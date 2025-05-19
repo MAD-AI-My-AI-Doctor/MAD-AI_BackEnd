@@ -45,5 +45,31 @@ namespace MADAI_BACKEND.Controllers
             }
             return BadRequest(new { error = result });
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDTO request)
+        {
+            var token = await _authService.ForgotPasswordAsync(request.Email);
+            if (token == null)
+                return NotFound("User not found.");
+
+            return Ok(new { Message = "Reset token generated. Check your email.", Token = token });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDTO request)
+        {
+            var success = await _authService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword);
+            if (!success)
+                return BadRequest("Invalid or expired token.");
+
+            return Ok("Password reset successfully.");
+        }
+
+
     }
+
+
+
+
 }
