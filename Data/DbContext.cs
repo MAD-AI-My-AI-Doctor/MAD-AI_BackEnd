@@ -11,6 +11,7 @@ namespace MADAI_BACKEND.Data
         public DbSet<AnalysisResult> AnalysisResults { get; set; }
         public DbSet<MedicalReport> MedicalReports { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         // ✅ Add model relationships
         protected override void OnModelCreating(ModelBuilder modelBuilder)
