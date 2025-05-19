@@ -1,6 +1,7 @@
 ﻿using MADAI_BACKEND.Contracts;
 using MADAI_BACKEND.Data;
 using MADAI_BACKEND.Models;
+using MADAI_BACKEND.Models.DTO;
 using MADAI_BACKEND.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,13 +16,15 @@ namespace MADAI_BACKEND.Controllers
     public class UserController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAIRecommendationService _aiService;
         private readonly IMedicalHistoryService _medicalHistoryService;
+    
 
-        public UserController(IMedicalHistoryService medicalHistoryService, AppDbContext context)
+        public UserController(IMedicalHistoryService medicalHistoryService, AppDbContext context, IAIRecommendationService aiService)
         {
             _medicalHistoryService = medicalHistoryService;
             _context = context;
-           
+            _aiService = aiService;
         }
 
         // 🔐 Admin: Get all users
@@ -131,6 +134,17 @@ namespace MADAI_BACKEND.Controllers
 
             var fileBytes = await System.IO.File.ReadAllBytesAsync(path);
             return File(fileBytes, "application/pdf", Path.GetFileName(path));
+        }
+
+        [HttpGet("ai-health-recommendation")]
+        public async Task<IActionResult> GetAIHealthRecommendation()
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            int userId = int.Parse(userIdClaim.Value);
+            var advice = await _aiService.GenerateHealthAdviceAsync(userId);
+            return Ok(new AIRecommendationDTO { Advice = advice });
         }
     }
 }
