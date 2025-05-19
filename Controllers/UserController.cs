@@ -146,5 +146,17 @@ namespace MADAI_BACKEND.Controllers
             var advice = await _aiService.GenerateHealthAdviceAsync(userId);
             return Ok(new AIRecommendationDTO { Advice = advice });
         }
+
+        [HttpGet("ai-personalized-insights")]
+        public async Task<IActionResult> GetAIPersonalizedInsights()
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            int userId = int.Parse(userIdClaim.Value);
+            var insights = await _aiService.GeneratePersonalizedHealthInsightsAsync(userId);
+            return Ok(new HealthInsightDTO { Tip = insights });
+        }
+
     }
 }
