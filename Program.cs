@@ -50,6 +50,9 @@ builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
+
+
 
 // ✅ Swagger with JWT Auth Support
 builder.Services.AddSwaggerGen(options =>
