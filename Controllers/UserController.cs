@@ -1,5 +1,7 @@
-﻿using MADAI_BACKEND.Data;
+﻿using MADAI_BACKEND.Contracts;
+using MADAI_BACKEND.Data;
 using MADAI_BACKEND.Models;
+using MADAI_BACKEND.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +15,13 @@ namespace MADAI_BACKEND.Controllers
     public class UserController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IMedicalHistoryService _medicalHistoryService;
 
-        public UserController(AppDbContext context)
+        public UserController(IMedicalHistoryService medicalHistoryService, AppDbContext context)
         {
+            _medicalHistoryService = medicalHistoryService;
             _context = context;
+           
         }
 
         // 🔐 Admin: Get all users
@@ -97,6 +102,35 @@ namespace MADAI_BACKEND.Controllers
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Your profile was deleted." });
+        }
+
+        [HttpGet("medical-history")]
+        public async Task<IActionResult> GetMedicalHistory()
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            int userId = int.Parse(userIdClaim.Value);
+            var history = await _medicalHistoryService.GetMedicalHistoryAsync(userId);
+            return Ok(history);
+        }
+
+        [HttpGet("medical-report/{id}/download")]
+        public async Task<IActionResult> DownloadMedicalReport(int id)
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            if (userIdClaim == null) return Unauthorized();
+
+            int userId = int.Parse(userIdClaim.Value);
+
+            var report = await _context.MedicalReports.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
+            if (report == null || string.IsNullOrEmpty(report.FilePath)) return NotFound("Medical report not found.");
+
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "uploads", report.FilePath);
+            if (!System.IO.File.Exists(path)) return NotFound("File not found on server.");
+
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(path);
+            return File(fileBytes, "application/pdf", Path.GetFileName(path));
         }
     }
 }

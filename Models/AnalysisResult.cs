@@ -17,5 +17,7 @@ namespace MADAI_BACKEND.Models
         public string? NextSteps { get; set; }
 
         public SymptomEntry? SymptomEntry { get; set; }
+        public int UserId { get; set; }  // ✅ Required for filtering
+        public User? User { get; set; }   // Optional navigation property
     }
 }
