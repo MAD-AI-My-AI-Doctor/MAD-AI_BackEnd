@@ -2,7 +2,7 @@
 {
     public interface IAIRecommendationService
     {
-        Task<string> GenerateHealthAdviceAsync(int userId);
-        Task<string> GeneratePersonalizedHealthInsightsAsync(int userId);
+        Task<string> GenerateHealthAdviceAsync(Guid userId);
+        Task<string> GeneratePersonalizedHealthInsightsAsync(Guid userId);
     }
 }

@@ -18,7 +18,6 @@ namespace MADAI_BACKEND.Controllers
         private readonly AppDbContext _context;
         private readonly IAIRecommendationService _aiService;
         private readonly IMedicalHistoryService _medicalHistoryService;
-    
 
         public UserController(IMedicalHistoryService medicalHistoryService, AppDbContext context, IAIRecommendationService aiService)
         {
@@ -27,7 +26,12 @@ namespace MADAI_BACKEND.Controllers
             _aiService = aiService;
         }
 
-        // 🔐 Admin: Get all users
+        private Guid? GetUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.TryParse(userIdClaim, out var id) ? id : null;
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpGet("all-users")]
         public async Task<IActionResult> GetAllUsers()
@@ -36,10 +40,9 @@ namespace MADAI_BACKEND.Controllers
             return Ok(users);
         }
 
-        // 🔐 Admin: Update any user by ID
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] User updatedUser)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] User updatedUser)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
@@ -53,10 +56,9 @@ namespace MADAI_BACKEND.Controllers
             return Ok(user);
         }
 
-        // 🔐 Admin: Delete any user
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(Guid id)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
@@ -66,23 +68,25 @@ namespace MADAI_BACKEND.Controllers
             return Ok(new { message = "User deleted successfully." });
         }
 
-        // 👤 Patient: Get own profile
         [Authorize(Roles = "Patient")]
         [HttpGet("me")]
         public async Task<IActionResult> GetMyProfile()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var user = await _context.Users.FindAsync(userId);
+            var userId = GetUserId();
+            if (userId is not Guid actualUserId) return Unauthorized();
+
+            var user = await _context.Users.FindAsync(actualUserId);
             return user == null ? NotFound() : Ok(user);
         }
 
-        // 👤 Patient: Update own profile
         [Authorize(Roles = "Patient")]
         [HttpPut("me")]
         public async Task<IActionResult> UpdateMyProfile([FromBody] User updated)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var user = await _context.Users.FindAsync(userId);
+            var userId = GetUserId();
+            if (userId is not Guid actualUserId) return Unauthorized();
+
+            var user = await _context.Users.FindAsync(actualUserId);
             if (user == null) return NotFound();
 
             user.FirstName = updated.FirstName;
@@ -93,13 +97,14 @@ namespace MADAI_BACKEND.Controllers
             return Ok(user);
         }
 
-        // 👤 Patient: Delete own profile
         [Authorize(Roles = "Patient")]
         [HttpDelete("me")]
         public async Task<IActionResult> DeleteMyProfile()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var user = await _context.Users.FindAsync(userId);
+            var userId = GetUserId();
+            if (userId is not Guid actualUserId) return Unauthorized();
+
+            var user = await _context.Users.FindAsync(actualUserId);
             if (user == null) return NotFound();
 
             _context.Users.Remove(user);
@@ -110,27 +115,28 @@ namespace MADAI_BACKEND.Controllers
         [HttpGet("medical-history")]
         public async Task<IActionResult> GetMedicalHistory()
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
+            var userId = GetUserId();
+            if (userId is not Guid actualUserId) return Unauthorized();
 
-            int userId = int.Parse(userIdClaim.Value);
-            var history = await _medicalHistoryService.GetMedicalHistoryAsync(userId);
+            var history = await _medicalHistoryService.GetMedicalHistoryAsync(actualUserId);
             return Ok(history);
         }
 
         [HttpGet("medical-report/{id}/download")]
-        public async Task<IActionResult> DownloadMedicalReport(int id)
+        public async Task<IActionResult> DownloadMedicalReport(Guid id)
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
+            var userId = GetUserId();
+            if (userId is not Guid actualUserId) return Unauthorized();
 
-            int userId = int.Parse(userIdClaim.Value);
+            var report = await _context.MedicalReports
+                .FirstOrDefaultAsync(r => r.Id == id && r.UserId == actualUserId);
 
-            var report = await _context.MedicalReports.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
-            if (report == null || string.IsNullOrEmpty(report.FilePath)) return NotFound("Medical report not found.");
+            if (report == null || string.IsNullOrEmpty(report.FilePath))
+                return NotFound("Medical report not found.");
 
             var path = Path.Combine(Directory.GetCurrentDirectory(), "uploads", report.FilePath);
-            if (!System.IO.File.Exists(path)) return NotFound("File not found on server.");
+            if (!System.IO.File.Exists(path))
+                return NotFound("File not found on server.");
 
             var fileBytes = await System.IO.File.ReadAllBytesAsync(path);
             return File(fileBytes, "application/pdf", Path.GetFileName(path));
@@ -139,24 +145,21 @@ namespace MADAI_BACKEND.Controllers
         [HttpGet("ai-health-recommendation")]
         public async Task<IActionResult> GetAIHealthRecommendation()
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
+            var userId = GetUserId();
+            if (userId is not Guid actualUserId) return Unauthorized();
 
-            int userId = int.Parse(userIdClaim.Value);
-            var advice = await _aiService.GenerateHealthAdviceAsync(userId);
+            var advice = await _aiService.GenerateHealthAdviceAsync(actualUserId);
             return Ok(new AIRecommendationDTO { Advice = advice });
         }
 
         [HttpGet("ai-personalized-insights")]
         public async Task<IActionResult> GetAIPersonalizedInsights()
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim == null) return Unauthorized();
+            var userId = GetUserId();
+            if (userId is not Guid actualUserId) return Unauthorized();
 
-            int userId = int.Parse(userIdClaim.Value);
-            var insights = await _aiService.GeneratePersonalizedHealthInsightsAsync(userId);
+            var insights = await _aiService.GeneratePersonalizedHealthInsightsAsync(actualUserId);
             return Ok(new HealthInsightDTO { Tip = insights });
         }
-
     }
 }

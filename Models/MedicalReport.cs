@@ -5,7 +5,7 @@ namespace MADAI_BACKEND.Models
     public class MedicalReport
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
         public string PatientName { get; set; } = string.Empty;
@@ -22,7 +22,7 @@ namespace MADAI_BACKEND.Models
 
         public DateTime DateUploaded { get; set; } = DateTime.Now;
 
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public User? User { get; set; }
 
         public byte[]? FileData { get; set; }  // 🆕 Add this

@@ -17,12 +17,10 @@ namespace MADAI_BACKEND.Services
 
         public string GenerateToken(string userId, string role)
         {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var jwtSettings = _configuration.GetSection("Jwt"); // ✅ FIXED from "JwtSettings" to "Jwt"
 
-            // ✅ Null-safety for Key
             var secret = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT key is missing in configuration.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
@@ -31,7 +29,7 @@ namespace MADAI_BACKEND.Services
                 new Claim(ClaimTypes.Role, role)
             };
 
-            // ✅ Safer parsing with default fallback
+            // Optional: Configurable expiry
             var expiry = double.TryParse(jwtSettings["ExpiryInMinutes"], out var result) ? result : 60;
 
             var token = new JwtSecurityToken(

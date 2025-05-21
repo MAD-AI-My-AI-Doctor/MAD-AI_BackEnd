@@ -6,18 +6,20 @@ namespace MADAI_BACKEND.Models
     public class AnalysisResult
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [ForeignKey("SymptomEntry")]
-        public int SymptomEntryId { get; set; }
+        public Guid SymptomEntryId { get; set; }
+        public SymptomEntry? SymptomEntry { get; set; }
+
 
         // Mark as nullable so the compiler won’t warn if not set in the constructor.
         public string? Summary { get; set; }
         public string? SuggestedConditions { get; set; }
         public string? NextSteps { get; set; }
 
-        public SymptomEntry? SymptomEntry { get; set; }
-        public int UserId { get; set; }  // ✅ Required for filtering
+
+        public Guid UserId { get; set; } // ✅ Required for filtering
         public User? User { get; set; }   // Optional navigation property
     }
 }

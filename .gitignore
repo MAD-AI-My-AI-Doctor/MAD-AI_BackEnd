@@ -15,7 +15,7 @@ obj/
 *.snupkg
 
 # Database files
-*.db
+# *.db
 
 # Log files
 *.log
@@ -25,4 +25,4 @@ obj/
 *.temp
 
 # Entity Framework Migrations
-Migrations/
+# Migrations/
