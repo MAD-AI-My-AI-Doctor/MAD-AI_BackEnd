@@ -1,9 +1,8 @@
 ﻿using MADAI_BACKEND.Contracts;
 using MADAI_BACKEND.Models.DTO;
-using MADAI_BACKEND.Models; // Make sure this includes your DbContext
+using MADAI_BACKEND.Models;
 using Microsoft.EntityFrameworkCore;
 using MADAI_BACKEND.Data;
-
 
 namespace MADAI_BACKEND.Services
 {
@@ -16,7 +15,7 @@ namespace MADAI_BACKEND.Services
             _context = context;
         }
 
-        public async Task<MedicalHistoryDTO> GetMedicalHistoryAsync(int userId)
+        public async Task<MedicalHistoryDTO> GetMedicalHistoryAsync(Guid userId)
         {
             var symptoms = await _context.SymptomEntries
                 .Where(s => s.UserId == userId)

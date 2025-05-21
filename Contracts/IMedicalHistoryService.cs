@@ -4,6 +4,6 @@ namespace MADAI_BACKEND.Contracts
 {
     public interface IMedicalHistoryService
     {
-        Task<MedicalHistoryDTO> GetMedicalHistoryAsync(int userId);
+        Task<MedicalHistoryDTO> GetMedicalHistoryAsync(Guid userId);
     }
 }

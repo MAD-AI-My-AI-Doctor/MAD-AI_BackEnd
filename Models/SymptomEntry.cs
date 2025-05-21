@@ -6,7 +6,7 @@ namespace MADAI_BACKEND.Models
     public class SymptomEntry
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
         public string? PatientName { get; set; }  // Marked as nullable; [Required] will still validate at runtime.
@@ -18,7 +18,7 @@ namespace MADAI_BACKEND.Models
 
         public AnalysisResult? AnalysisResult { get; set; }
 
-        public int UserId { get; set; } // foreign key
+        public Guid UserId { get; set; } // foreign key
         public User? User { get; set; }
         // navigation property
 

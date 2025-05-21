@@ -12,7 +12,6 @@ namespace MADAI_BACKEND.Services
     {
         private readonly AppDbContext _context;
         private readonly JwtService _jwtService;
-        private readonly Dictionary<string, string> _resetTokens = new();
 
         public AuthService(AppDbContext context, JwtService jwtService)
         {
@@ -32,39 +31,33 @@ namespace MADAI_BACKEND.Services
                 };
             }
 
-            // ✅ Use JwtService to generate token
             var token = _jwtService.GenerateToken(user.Id.ToString(), user.Role.ToString());
 
             return new SignInResponseDTO
             {
                 Token = token,
                 Message = "Login successful",
-                UserId = user.Id,
+                UserId = user.Id, // ✅ This is Guid
                 Email = user.Email
             };
         }
 
         public async Task<string> Signup(SignupRequestDTO signupRequest, string creatorEmail)
         {
-            // Check if email already exists
             if (_context.Users.Any(u => u.Email == signupRequest.Email))
             {
                 return "Email already exists";
             }
 
-            // Fetch the existing admin based on the provided creatorEmail
             var existingAdmin = _context.Users.FirstOrDefault(u => u.Email == creatorEmail && u.Role == UserRole.Admin);
 
-            // Restrict admin creation to existing admins only
             if (signupRequest.Role == UserRole.Admin && existingAdmin == null)
             {
                 return "Only an existing admin can create a new admin.";
             }
 
-            // Hash the password using BCrypt
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(signupRequest.Password);
 
-            // Create a new user
             var user = new User
             {
                 FirstName = signupRequest.FirstName,
@@ -75,7 +68,6 @@ namespace MADAI_BACKEND.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Add user to the database
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
@@ -120,7 +112,5 @@ namespace MADAI_BACKEND.Services
             await _context.SaveChangesAsync();
             return true;
         }
-
-
     }
 }

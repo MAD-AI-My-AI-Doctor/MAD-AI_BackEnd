@@ -1,25 +1,63 @@
-﻿using MADAI_BACKEND.Data;
-using MADAI_BACKEND.Contracts;
+﻿using MADAI_BACKEND.Contracts;
+using MADAI_BACKEND.Data;
 using MADAI_BACKEND.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add DB Context
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+// ✅ Load Configuration
+var configuration = builder.Configuration;
 
-// ✅ Register HttpClient for services that use it
+// ✅ Add services to the container
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+// ✅ Swagger + JWT Support
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "MAD AI Doctor API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer' followed by your JWT token",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// ✅ SQLite DbContext
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(configuration.GetConnectionString("DefaultConnection") ?? "Data Source=MADAI.db"));
+
+// ✅ Register Application Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<JwtService>(); // No interface needed
+builder.Services.AddScoped<ISymptomService, SymptomService>();
+builder.Services.AddScoped<IMedicalReportService, MedicalReportService>();
+builder.Services.AddScoped<IAIRecommendationService, AIRecommendationService>();
+builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
+
+// ✅ HttpClient for OpenRouter API
 builder.Services.AddHttpClient();
 
-// JWT Setup
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secret = jwtSettings["Key"] ?? throw new InvalidOperationException("JWT key is missing in configuration.");
-var key = Encoding.UTF8.GetBytes(secret);
+// ✅ JWT Authentication Configuration
+var jwtKey = configuration["Jwt:Key"] ?? "ThisIsASecretKey1234!";
+var jwtIssuer = configuration["Jwt:Issuer"] ?? "MADAI";
 
 builder.Services.AddAuthentication(options =>
 {
@@ -34,69 +72,27 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        ValidAudience = configuration["Jwt:Audience"] ?? "MADAIUsers",
+        ValidIssuer = jwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
 });
 
-// Register Services
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IMedicalReportService, MedicalReportService>();
-builder.Services.AddScoped<ISymptomService, SymptomService>();
-builder.Services.AddScoped<JwtService>();
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddScoped<IMedicalHistoryService, MedicalHistoryService>();
-builder.Services.AddScoped<IAIRecommendationService, AIRecommendationService>();
-
-
-
-
-// ✅ Swagger with JWT Auth Support
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "MADAI API", Version = "v1" });
-
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter: **Bearer your-token-here**"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// ✅ Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseAuthentication();  // 🔐 Must be before UseAuthorization
+app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
 app.Run();

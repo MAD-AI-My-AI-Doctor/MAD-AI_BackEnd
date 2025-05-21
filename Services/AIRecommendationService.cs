@@ -1,6 +1,8 @@
 ﻿using MADAI_BACKEND.Contracts;
 using MADAI_BACKEND.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace MADAI_BACKEND.Services
@@ -9,14 +11,16 @@ namespace MADAI_BACKEND.Services
     {
         private readonly AppDbContext _context;
         private readonly HttpClient _httpClient;
+        private readonly string _apiKey;
 
-        public AIRecommendationService(AppDbContext context, HttpClient httpClient)
+        public AIRecommendationService(AppDbContext context, HttpClient httpClient, IConfiguration config)
         {
             _context = context;
             _httpClient = httpClient;
+            _apiKey = config["OpenRouter:ApiKey"];
         }
 
-        public async Task<string> GenerateHealthAdviceAsync(int userId)
+        public async Task<string> GenerateHealthAdviceAsync(Guid userId)
         {
             var symptoms = await _context.SymptomEntries
                 .Where(s => s.UserId == userId)
@@ -29,15 +33,18 @@ namespace MADAI_BACKEND.Services
 
             var requestBody = new
             {
-                model = "deepseek-chat",
+                model = "gpt-3.5-turbo",
                 messages = new[]
                 {
-                new { role = "system", content = "You are an AI health advisor." },
-                new { role = "user", content = $"Patient symptoms: {history}\nPlease provide health advice." }
-            }
+                    new { role = "system", content = "You are an AI health advisor." },
+                    new { role = "user", content = $"Patient symptoms: {history}\nPlease provide health advice." }
+                }
             };
 
-            var response = await _httpClient.PostAsJsonAsync("https://api.deepseek.com/v1/chat/completions", requestBody);
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+
+            var response = await _httpClient.PostAsJsonAsync("https://openrouter.ai/api/v1/chat/completions", requestBody);
             response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -46,7 +53,7 @@ namespace MADAI_BACKEND.Services
             return advice ?? "No advice generated.";
         }
 
-        public async Task<string> GeneratePersonalizedHealthInsightsAsync(int userId)
+        public async Task<string> GeneratePersonalizedHealthInsightsAsync(Guid userId)
         {
             var symptoms = await _context.SymptomEntries
                 .Where(s => s.UserId == userId)
@@ -58,15 +65,18 @@ namespace MADAI_BACKEND.Services
 
             var requestBody = new
             {
-                model = "deepseek-chat",
+                model = "gpt-3.5-turbo",
                 messages = new[]
                 {
-            new { role = "system", content = "You are a personal health assistant. Based on the user's medical history and symptoms, give personalized health tips to help them stay healthy." },
-            new { role = "user", content = $"User recent symptoms: {history}\nGive personalized health insights and tips for better daily health and lifestyle." }
-        }
+                    new { role = "system", content = "You are a personal health assistant. Based on the user's medical history and symptoms, give personalized health tips to help them stay healthy." },
+                    new { role = "user", content = $"User recent symptoms: {history}\nGive personalized health insights and tips for better daily health and lifestyle." }
+                }
             };
 
-            var response = await _httpClient.PostAsJsonAsync("https://api.deepseek.com/v1/chat/completions", requestBody);
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+
+            var response = await _httpClient.PostAsJsonAsync("https://openrouter.ai/api/v1/chat/completions", requestBody);
             response.EnsureSuccessStatusCode();
 
             var content = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -74,6 +84,5 @@ namespace MADAI_BACKEND.Services
 
             return tip ?? "No insights generated.";
         }
-
     }
 }

@@ -10,7 +10,7 @@ using System.Security.Claims;
 
 namespace MADAI_BACKEND.Controllers
 {
-    [Authorize] // 🔐 Only logged-in users can access this controller
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class MedicalReportController : ControllerBase
@@ -24,17 +24,24 @@ namespace MADAI_BACKEND.Controllers
             _reportService = reportService;
         }
 
+        private Guid? GetUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Guid.TryParse(userIdClaim, out var id) ? id : null;
+        }
+
         [HttpPost("upload-report")]
         public async Task<IActionResult> UploadReport([FromForm] MedicalReportDTO reportDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized("Invalid user ID.");
 
             var analysisResult = await _reportService.AnalyzeMedicalReportAsync(reportDto);
 
-            // ✅ Save file to memory (for DB)
             byte[] fileBytes;
             using (var ms = new MemoryStream())
             {
@@ -42,12 +49,10 @@ namespace MADAI_BACKEND.Controllers
                 fileBytes = ms.ToArray();
             }
 
-            // ✅ Ensure 'uploads' folder exists
             var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
             if (!Directory.Exists(uploadsDir))
                 Directory.CreateDirectory(uploadsDir);
 
-            // ✅ Save file to disk
             var filePath = Path.Combine(uploadsDir, reportDto.File.FileName);
             using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
@@ -63,7 +68,7 @@ namespace MADAI_BACKEND.Controllers
                 AnalysisSummary = analysisResult.Summary,
                 SuggestedConditions = string.Join(",", analysisResult.SuggestedConditions ?? new string[] { }),
                 NextSteps = string.Join(",", analysisResult.NextSteps ?? new string[] { }),
-                UserId = userId
+                UserId = userId.Value
             };
 
             _context.MedicalReports.Add(report);
@@ -72,9 +77,8 @@ namespace MADAI_BACKEND.Controllers
             return Ok(analysisResult);
         }
 
-
         [HttpGet("download-report/{id}")]
-        public async Task<IActionResult> DownloadReport(int id)
+        public async Task<IActionResult> DownloadReport(Guid id)
         {
             var report = await _context.MedicalReports.FindAsync(id);
 
@@ -84,10 +88,8 @@ namespace MADAI_BACKEND.Controllers
             return File(report.FileData, "application/pdf", report.FileName);
         }
 
-
-
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetReport(int id)
+        public async Task<IActionResult> GetReport(Guid id)
         {
             var report = await _context.MedicalReports.FindAsync(id);
             if (report == null)
@@ -106,14 +108,15 @@ namespace MADAI_BACKEND.Controllers
         [HttpGet("my-reports")]
         public async Task<IActionResult> GetMyReports()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized();
 
             var reports = await _context.MedicalReports
-                .Where(r => r.UserId == userId)
+                .Where(r => r.UserId == userId.Value)
                 .ToListAsync();
 
             return Ok(reports);
         }
-
     }
 }

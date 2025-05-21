@@ -5,12 +5,11 @@ using MADAI_BACKEND.Models.DTO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using System.Threading.Tasks;
 using System.Security.Claims;
 
 namespace MADAI_BACKEND.Controllers
 {
-    [Authorize] // 🔐 JWT token required for all endpoints in this controller
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class SymptomCheckerController : ControllerBase
@@ -30,30 +29,34 @@ namespace MADAI_BACKEND.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!); // ✅ Get current user
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdClaim, out Guid userId))
+                return Unauthorized("Invalid or missing user ID.");
 
-            // Save user input as a new SymptomEntry.
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+                return BadRequest("User does not exist.");
+
             var entry = new SymptomEntry
             {
                 PatientName = entryDto.PatientName,
                 SymptomsText = entryDto.SymptomsText,
                 DateSubmitted = entryDto.DateSubmitted,
-                UserId = userId // ✅ Assign to logged-in user
+                UserId = userId
             };
 
             _context.SymptomEntries.Add(entry);
             await _context.SaveChangesAsync();
 
-            // Get analysis result from the AI service using the DTO.
             var resultDto = await _symptomService.AnalyzeSymptomsAsync(entryDto);
 
-            // Create the AnalysisResult entity, associating it with the saved SymptomEntry.
             var analysisResult = new AnalysisResult
             {
                 Summary = resultDto.Summary,
                 SuggestedConditions = string.Join(",", resultDto.SuggestedConditions ?? Array.Empty<string>()),
                 NextSteps = string.Join(",", resultDto.NextSteps ?? Array.Empty<string>()),
-                SymptomEntryId = entry.Id
+                SymptomEntryId = entry.Id,
+                UserId = userId
             };
 
             _context.AnalysisResults.Add(analysisResult);
@@ -63,9 +66,11 @@ namespace MADAI_BACKEND.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetResult(int id)
+        public async Task<IActionResult> GetResult(Guid id)
         {
-            var result = await _context.AnalysisResults.FirstOrDefaultAsync(r => r.SymptomEntryId == id);
+            var result = await _context.AnalysisResults
+                .FirstOrDefaultAsync(r => r.SymptomEntryId == id);
+
             if (result == null)
                 return NotFound();
 
@@ -75,7 +80,9 @@ namespace MADAI_BACKEND.Controllers
         [HttpGet("my-symptoms")]
         public async Task<IActionResult> GetMySymptoms()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdClaim, out Guid userId))
+                return Unauthorized("Invalid or missing user ID.");
 
             var entries = await _context.SymptomEntries
                 .Where(e => e.UserId == userId)
@@ -83,6 +90,5 @@ namespace MADAI_BACKEND.Controllers
 
             return Ok(entries);
         }
-
     }
 }
